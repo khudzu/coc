@@ -4,53 +4,75 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Clash Builder 3-Account Cloud Sync</title>
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <!-- Tailwind CSS Official Play CDN + Fallback CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet" />
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    /* Fallback wajib agar tampilan tidak pernah kacau walau CDN lambat/diblokir */
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #0e131f !important;
+      color: #f1f5f9 !important;
+      margin: 0;
+      padding-bottom: 3.5rem;
+    }
+    .hidden { display: none !important; }
     .font-mono-num { font-variant-numeric: tabular-nums; }
+    .card-surface {
+      background-color: #151e31;
+      border: 1px solid rgba(51, 65, 85, 0.8);
+      border-radius: 1rem;
+    }
+    .inner-surface {
+      background-color: #0e131f;
+      border: 1px solid rgba(30, 41, 59, 0.9);
+      border-radius: 0.75rem;
+    }
+    button, select, input, textarea { font-family: inherit; }
   </style>
 </head>
-<body class="min-h-screen bg-[#0e131f] text-slate-100 pb-14 selection:bg-amber-500 selection:text-slate-950">
+<body class="min-h-screen bg-[#0e131f] text-slate-100 pb-14">
 
-  <div id="toast" class="hidden fixed bottom-5 right-5 z-50 flex items-center gap-2.5 bg-amber-500 text-slate-950 font-semibold px-4 py-3 rounded-xl shadow-2xl border-2 border-amber-300">
-    <span class="text-base">&#10024;</span>
+  <div id="toast" class="hidden fixed bottom-5 right-5 z-50 flex items-center gap-2 bg-yellow-500 text-gray-900 font-bold px-4 py-3 rounded-xl shadow-2xl border-2 border-yellow-300">
+    <span>&#10024;</span>
     <span id="toast-msg" class="text-sm"></span>
   </div>
 
-  <header class="bg-gradient-to-b from-[#1b2438] to-[#0e131f] border-b border-amber-500/20 px-4 sm:px-6 py-5">
+  <header style="background: linear-gradient(180deg, #1b2438 0%, #0e131f 100%); border-bottom: 1px solid rgba(245, 158, 11, 0.2);" class="px-4 sm:px-6 py-5">
     <div class="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-      <div class="flex items-center gap-3.5">
-        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-orange-600 p-0.5 shadow-lg shadow-amber-500/20 shrink-0">
-          <div class="w-full h-full bg-[#131b2e] rounded-[14px] flex items-center justify-center text-2xl">&#128296;</div>
+      <div class="flex items-center gap-3">
+        <div style="background: linear-gradient(135deg, #fbbf24, #ea580c);" class="w-12 h-12 rounded-2xl p-0.5 shadow-lg shrink-0 flex items-center justify-center">
+          <div style="background-color: #131b2e;" class="w-full h-full rounded-xl flex items-center justify-center text-2xl">&#128296;</div>
         </div>
         <div>
           <div class="flex flex-wrap items-center gap-2">
-            <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-              Clash Builder <span class="text-amber-400">3-Account Cloud Sync</span>
+            <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white m-0">
+              Clash Builder <span class="text-yellow-400">3-Account Cloud Sync</span>
             </h1>
-            <span id="cloud-status-badge" class="inline-flex items-center px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider bg-slate-700/60 text-slate-300 rounded-full border border-slate-600">
+            <span id="cloud-status-badge" class="inline-flex items-center px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider bg-gray-800 text-gray-300 rounded-full border border-gray-600">
               Mode Lokal
             </span>
           </div>
-          <p class="text-xs sm:text-sm text-slate-400">
+          <p class="text-xs sm:text-sm text-gray-400 m-0 mt-1">
             Pantau 3 akun sekaligus &bull; Timer timestamp permanen &bull; Sinkron otomatis HP &amp; Laptop via Firebase
           </p>
         </div>
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
-        <button id="btn-open-sync" class="flex items-center gap-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold text-xs sm:text-sm px-3 py-2.5 rounded-xl transition cursor-pointer">
+        <button id="btn-open-sync" class="flex items-center gap-1.5 bg-green-900 bg-opacity-40 hover:bg-opacity-60 text-green-300 border border-green-500 border-opacity-40 font-bold text-xs sm:text-sm px-3 py-2.5 rounded-xl cursor-pointer">
           <span>&#9729;</span> Kode Sync
         </button>
-        <button id="btn-open-json" class="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs sm:text-sm px-3.5 py-2.5 rounded-xl shadow-lg shadow-indigo-500/20 transition cursor-pointer">
+        <button id="btn-open-json" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm px-3.5 py-2.5 rounded-xl shadow-lg cursor-pointer">
           <span>&#128196;</span> Impor JSON
         </button>
-        <button id="btn-open-add" class="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs sm:text-sm px-3.5 py-2.5 rounded-xl shadow-lg shadow-amber-500/20 transition cursor-pointer">
+        <button id="btn-open-add" class="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold text-xs sm:text-sm px-3.5 py-2.5 rounded-xl shadow-lg cursor-pointer">
           <span>&#43;</span> Tambah
         </button>
       </div>
@@ -60,88 +82,90 @@
   </header>
 
   <main class="max-w-6xl mx-auto px-4 sm:px-6 mt-5 space-y-6">
+    <!-- Ringkasan 3 Akun -->
     <section id="view-overview" class="space-y-6 hidden">
       <div id="overview-cards" class="grid grid-cols-1 lg:grid-cols-3 gap-4"></div>
-      <div class="bg-[#151e31] border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg space-y-3">
+      <div class="card-surface p-4 sm:p-5 shadow-lg space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 class="text-sm sm:text-base font-extrabold text-white">Jadwal Selesai Terdekat (Gabungan 3 Akun)</h2>
-            <p class="text-xs text-slate-400">Urutan pembangunan atau riset paling cepat selesai di antara semua akun</p>
+            <h2 class="text-sm sm:text-base font-extrabold text-white m-0">Jadwal Selesai Terdekat (Gabungan 3 Akun)</h2>
+            <p class="text-xs text-gray-400 m-0 mt-0.5">Urutan pembangunan atau riset paling cepat selesai di antara semua akun</p>
           </div>
-          <span id="overview-total-active" class="text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-lg">0 Aktif</span>
+          <span id="overview-total-active" class="text-xs font-bold bg-yellow-500 bg-opacity-20 text-yellow-300 border border-yellow-500 border-opacity-40 px-2.5 py-1 rounded-lg">0 Aktif</span>
         </div>
         <div id="overview-timeline" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
       </div>
     </section>
 
+    <!-- Detail per Akun -->
     <section id="view-account" class="space-y-6 hidden">
-      <div class="bg-[#151e31]/90 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-md">
+      <div class="card-surface p-4 space-y-3 shadow-md">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <div class="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-300">
+          <div class="flex flex-wrap items-center gap-2 text-xs font-bold text-gray-300">
             <span id="acc-summary-title" class="text-sm font-extrabold text-white">Akun 1</span>
-            <span id="acc-tag-badge" class="bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md">#P92YY0CP</span>
-            <span id="acc-th-badge" class="bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md">TH 17</span>
+            <span id="acc-tag-badge" class="bg-green-900 bg-opacity-40 text-green-300 border border-green-500 border-opacity-40 px-2 py-0.5 rounded-md">#P92YY0CP</span>
+            <span id="acc-th-badge" class="bg-yellow-900 bg-opacity-40 text-yellow-300 border border-yellow-500 border-opacity-40 px-2 py-0.5 rounded-md">TH 17</span>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <button id="btn-rename-acc" class="text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 cursor-pointer">Ubah Nama</button>
-            <button id="btn-clear-done" class="text-xs font-bold bg-slate-800 hover:bg-slate-700 text-emerald-300 px-3 py-1.5 rounded-lg border border-slate-700 cursor-pointer">Bersihkan Selesai</button>
-            <button id="btn-reset-acc" class="text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 cursor-pointer">Reset Akun</button>
+            <button id="btn-rename-acc" class="text-xs font-bold bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-1.5 rounded-lg border border-gray-700 cursor-pointer">Ubah Nama</button>
+            <button id="btn-clear-done" class="text-xs font-bold bg-gray-800 hover:bg-gray-700 text-green-300 px-3 py-1.5 rounded-lg border border-gray-700 cursor-pointer">Bersihkan Selesai</button>
+            <button id="btn-reset-acc" class="text-xs font-bold bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-lg border border-gray-700 cursor-pointer">Reset Akun</button>
           </div>
         </div>
-        <div id="helpers-grid" class="pt-2.5 border-t border-slate-800/90 grid grid-cols-1 sm:grid-cols-3 gap-2.5"></div>
+        <div id="helpers-grid" class="pt-2.5 border-t border-gray-800 grid grid-cols-1 sm:grid-cols-3 gap-2.5"></div>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div class="bg-[#151e31] border border-amber-500/25 rounded-2xl p-4 shadow-lg">
+        <div class="card-surface p-4 shadow-lg">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-amber-400/90">Pondok Tukang</span>
-            <span id="builders-free-badge" class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">1 Tersedia</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-yellow-400">Pondok Tukang</span>
+            <span id="builders-free-badge" class="text-xs font-bold px-2 py-0.5 rounded-full bg-green-900 bg-opacity-40 text-green-300">1 Tersedia</span>
           </div>
           <div class="mt-2 flex items-baseline gap-2">
             <span id="builders-ratio" class="text-3xl font-black text-white">0 / 6</span>
-            <span class="text-xs text-slate-400">Desa Utama</span>
+            <span class="text-xs text-gray-400">Desa Utama</span>
           </div>
           <div id="builders-dots" class="mt-3 flex items-center gap-1.5"></div>
         </div>
 
-        <div class="bg-[#151e31] border border-slate-700/80 rounded-2xl p-4 shadow-lg">
-          <span class="text-xs font-bold uppercase tracking-wider text-sky-400">Selesai Terdekat</span>
+        <div class="card-surface p-4 shadow-lg">
+          <span class="text-xs font-bold uppercase tracking-wider text-blue-400">Selesai Terdekat</span>
           <div id="next-finish-box" class="mt-2"></div>
         </div>
 
-        <div class="bg-[#151e31] border border-cyan-500/25 rounded-2xl p-4 shadow-lg">
+        <div class="card-surface p-4 shadow-lg">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-cyan-400">Lab &amp; Desa Tukang</span>
-            <span id="lab-bb-count" class="text-xs font-semibold text-slate-400">0 Berjalan</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-indigo-300">Lab &amp; Desa Tukang</span>
+            <span id="lab-bb-count" class="text-xs font-semibold text-gray-400">0 Berjalan</span>
           </div>
           <div id="lab-bb-box" class="mt-2 space-y-1.5 text-xs"></div>
         </div>
 
-        <div class="bg-[#151e31] border border-slate-700/80 rounded-2xl p-4 shadow-lg flex flex-col justify-between">
+        <div class="card-surface p-4 shadow-lg flex flex-col justify-between">
           <span class="text-xs font-bold uppercase tracking-wider text-purple-400">Pengaturan Akun</span>
           <div class="mt-2 space-y-2">
             <div class="flex items-center justify-between">
-              <span class="text-xs text-slate-300">Tukang:</span>
+              <span class="text-xs text-gray-300">Tukang:</span>
               <div id="builder-count-btns" class="flex items-center gap-1"></div>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-xs text-slate-300">Gold Pass:</span>
+              <span class="text-xs text-gray-300">Gold Pass:</span>
               <div id="gold-pass-btns" class="flex items-center gap-1"></div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="bg-gradient-to-r from-[#17223b] via-[#1a2540] to-[#17223b] border border-indigo-500/30 rounded-2xl p-4 shadow-lg flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-        <div class="text-xs text-slate-300">
+      <div class="card-surface p-4 shadow-lg flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div class="text-xs text-gray-300">
           <strong class="text-white text-sm block">Simulasi Item Sihir (Khusus Akun Ini)</strong>
           Percepat timestamp selesai secara permanen &amp; otomatis tersinkron ke perangkat lain.
         </div>
         <div class="flex flex-wrap items-center gap-2">
-          <button id="btn-potion-builder" class="bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 px-3 py-2 rounded-xl text-xs font-bold cursor-pointer">Ramuan Tukang (-9j)</button>
-          <button id="btn-potion-lab" class="bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 px-3 py-2 rounded-xl text-xs font-bold cursor-pointer">Ramuan Riset (-23j)</button>
-          <button id="btn-potion-pet" class="bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 px-3 py-2 rounded-xl text-xs font-bold cursor-pointer">Ramuan Pet (-23j)</button>
-          <select id="select-apprentice" class="bg-slate-800 text-amber-300 text-xs font-bold rounded-xl px-2.5 py-2 border border-slate-700">
+          <button id="btn-potion-builder" class="bg-yellow-900 bg-opacity-40 hover:bg-opacity-60 text-yellow-300 border border-yellow-500 border-opacity-40 px-3 py-2 rounded-xl text-xs font-bold cursor-pointer">Ramuan Tukang (-9j)</button>
+          <button id="btn-potion-lab" class="bg-blue-900 bg-opacity-40 hover:bg-opacity-60 text-blue-300 border border-blue-500 border-opacity-40 px-3 py-2 rounded-xl text-xs font-bold cursor-pointer">Ramuan Riset (-23j)</button>
+          <button id="btn-potion-pet" class="bg-green-900 bg-opacity-40 hover:bg-opacity-60 text-green-300 border border-green-500 border-opacity-40 px-3 py-2 rounded-xl text-xs font-bold cursor-pointer">Ramuan Pet (-23j)</button>
+          <select id="select-apprentice" class="bg-gray-800 text-yellow-300 text-xs font-bold rounded-xl px-2.5 py-2 border border-gray-700">
             <option value="1">Magang Lv.1 (-1j)</option>
             <option value="2">Magang Lv.2 (-2j)</option>
             <option value="3">Magang Lv.3 (-3j)</option>
@@ -154,90 +178,90 @@
         </div>
       </div>
 
-      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-800 pb-3">
         <div id="filter-tabs" class="flex flex-wrap items-center gap-1.5"></div>
       </div>
 
       <div id="upgrades-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
 
-      <div id="hero-roster-section" class="bg-[#151e31] border border-purple-500/25 rounded-2xl p-4 sm:p-5 shadow-lg space-y-3">
-        <h2 id="hero-roster-title" class="text-sm sm:text-base font-extrabold text-white">Daftar Level Pahlawan</h2>
+      <div id="hero-roster-section" class="card-surface p-4 sm:p-5 shadow-lg space-y-3">
+        <h2 id="hero-roster-title" class="text-sm sm:text-base font-extrabold text-white m-0">Daftar Level Pahlawan</h2>
         <div id="hero-roster-grid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5"></div>
       </div>
     </section>
   </main>
 
   <!-- Modal: Cloud Sync Room ID -->
-  <div id="modal-sync" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-[#151e31] border border-emerald-500/40 rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 class="text-base font-extrabold text-white">Pengaturan Cloud Sync (HP &amp; Laptop)</h3>
-        <button id="btn-close-sync" class="text-slate-400 hover:text-white text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-800 cursor-pointer">Tutup</button>
+  <div id="modal-sync" class="hidden fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4">
+    <div class="card-surface max-w-md w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+        <h3 class="text-base font-extrabold text-white m-0">Pengaturan Cloud Sync (HP &amp; Laptop)</h3>
+        <button id="btn-close-sync" class="text-gray-400 hover:text-white text-xs font-bold px-2.5 py-1 rounded-lg bg-gray-800 cursor-pointer">Tutup</button>
       </div>
       <form id="form-sync" class="space-y-3">
-        <p class="text-xs text-slate-300">Masukkan <strong>Kode Sinkronisasi</strong> yang sama di HP dan laptop agar seluruh data 3 akun tersinkron otomatis.</p>
+        <p class="text-xs text-gray-300 m-0">Masukkan <strong>Kode Sinkronisasi</strong> yang sama di HP dan laptop agar seluruh data 3 akun tersinkron otomatis.</p>
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Kode Sinkronisasi (Room ID)</label>
-          <input id="sync-room-input" type="text" required class="w-full bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-2 text-sm font-mono text-emerald-300 focus:outline-none focus:border-emerald-400" />
+          <label class="block text-xs font-semibold text-gray-300 mb-1">Kode Sinkronisasi (Room ID)</label>
+          <input id="sync-room-input" type="text" required class="inner-surface w-full px-3 py-2 text-sm font-mono text-green-300" />
         </div>
         <div class="flex justify-end gap-2 pt-2">
-          <button type="button" id="btn-cancel-sync" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 cursor-pointer">Batal</button>
-          <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 cursor-pointer">Hubungkan &amp; Sinkronkan</button>
+          <button type="button" id="btn-cancel-sync" class="px-4 py-2 rounded-xl text-xs font-bold text-gray-300 bg-gray-800 cursor-pointer">Batal</button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold text-gray-900 bg-green-400 hover:bg-green-300 cursor-pointer">Hubungkan &amp; Sinkronkan</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- Modal: Import JSON -->
-  <div id="modal-json" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-[#151e31] border border-indigo-500/40 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 my-8">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 class="text-base font-extrabold text-white">Impor JSON Desa Clash of Clans</h3>
-        <button id="btn-close-json" class="text-slate-400 hover:text-white text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-800 cursor-pointer">Tutup</button>
+  <div id="modal-json" class="hidden fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="card-surface max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 my-8">
+      <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+        <h3 class="text-base font-extrabold text-white m-0">Impor JSON Desa Clash of Clans</h3>
+        <button id="btn-close-json" class="text-gray-400 hover:text-white text-xs font-bold px-2.5 py-1 rounded-lg bg-gray-800 cursor-pointer">Tutup</button>
       </div>
       <form id="form-json" class="space-y-3.5">
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Pilih Slot Akun Tujuan:</label>
-          <select id="json-target-account" class="w-full bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white"></select>
+          <label class="block text-xs font-semibold text-gray-300 mb-1.5">Pilih Slot Akun Tujuan:</label>
+          <select id="json-target-account" class="inner-surface w-full px-3 py-2 text-sm font-bold text-white"></select>
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tempel Data JSON Desa:</label>
-          <textarea id="json-textarea" rows="6" required placeholder='{"tag":"#...","timestamp":...,"buildings":[...]}' class="w-full bg-[#0e131f] border border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-200"></textarea>
+          <label class="block text-xs font-semibold text-gray-300 mb-1.5">Tempel Data JSON Desa:</label>
+          <textarea id="json-textarea" rows="6" required placeholder='{"tag":"#...","timestamp":...,"buildings":[...]}' class="inner-surface w-full p-3 text-xs font-mono text-gray-200"></textarea>
         </div>
         <div class="flex items-center justify-end gap-2">
-          <button type="button" id="btn-cancel-json" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-300 bg-slate-800 cursor-pointer">Batal</button>
-          <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-indigo-500 hover:bg-indigo-400 cursor-pointer">Sinkronkan Akun</button>
+          <button type="button" id="btn-cancel-json" class="px-4 py-2 rounded-xl text-xs font-bold text-gray-300 bg-gray-800 cursor-pointer">Batal</button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 cursor-pointer">Sinkronkan Akun</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- Modal: Add Upgrade -->
-  <div id="modal-add" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-[#151e31] border border-amber-500/40 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 my-8">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 class="text-base font-extrabold text-white">Tambah Pembangunan Baru</h3>
-        <button id="btn-close-add" class="text-slate-400 hover:text-white text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-800 cursor-pointer">Tutup</button>
+  <div id="modal-add" class="hidden fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="card-surface max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 my-8">
+      <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+        <h3 class="text-base font-extrabold text-white m-0">Tambah Pembangunan Baru</h3>
+        <button id="btn-close-add" class="text-gray-400 hover:text-white text-xs font-bold px-2.5 py-1 rounded-lg bg-gray-800 cursor-pointer">Tutup</button>
       </div>
       <form id="form-add" class="space-y-3.5">
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Masukkan ke Akun:</label>
-          <select id="add-target-account" class="w-full bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white"></select>
+          <label class="block text-xs font-semibold text-gray-300 mb-1">Masukkan ke Akun:</label>
+          <select id="add-target-account" class="inner-surface w-full px-3 py-2 text-sm font-bold text-white"></select>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div class="sm:col-span-2">
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Nama Bangunan / Hero / Riset</label>
-            <input id="input-name" type="text" required value="Menara Inferno" class="w-full bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Nama Bangunan / Hero / Riset</label>
+            <input id="input-name" type="text" required value="Menara Inferno" class="inner-surface w-full px-3 py-2 text-sm text-white" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Menuju Level</label>
-            <input id="input-level" type="number" min="1" max="120" required value="10" class="w-full bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Menuju Level</label>
+            <input id="input-level" type="number" min="1" max="120" required value="10" class="inner-surface w-full px-3 py-2 text-sm text-white" />
           </div>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Kategori</label>
-            <select id="input-category" class="w-full bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Kategori</label>
+            <select id="input-category" class="inner-surface w-full px-3 py-2 text-sm text-white">
               <option value="builder">Bangunan</option>
               <option value="hero">Hero</option>
               <option value="lab">Laboratorium</option>
@@ -245,50 +269,50 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Resource</label>
-            <select id="input-resource" class="w-full bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Resource</label>
+            <select id="input-resource" class="inner-surface w-full px-3 py-2 text-sm text-white">
               <option value="Gold">Gold</option>
               <option value="Elixir">Elixir</option>
               <option value="Dark Elixir">Dark Elixir</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Biaya</label>
-            <input id="input-cost" type="text" value="19.0M" class="w-full bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Biaya</label>
+            <input id="input-cost" type="text" value="19.0M" class="inner-surface w-full px-3 py-2 text-sm text-white" />
           </div>
         </div>
         <div class="grid grid-cols-3 gap-2.5">
-          <div class="bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-1.5 flex items-center">
-            <input id="input-days" type="number" min="0" max="30" value="5" class="w-full bg-transparent text-sm font-bold text-white" />
-            <span class="text-xs text-slate-400 ml-1">Hari</span>
+          <div class="inner-surface px-3 py-1.5 flex items-center">
+            <input id="input-days" type="number" min="0" max="30" value="5" class="w-full bg-transparent text-sm font-bold text-white border-0" />
+            <span class="text-xs text-gray-400 ml-1">Hari</span>
           </div>
-          <div class="bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-1.5 flex items-center">
-            <input id="input-hours" type="number" min="0" max="23" value="0" class="w-full bg-transparent text-sm font-bold text-white" />
-            <span class="text-xs text-slate-400 ml-1">Jam</span>
+          <div class="inner-surface px-3 py-1.5 flex items-center">
+            <input id="input-hours" type="number" min="0" max="23" value="0" class="w-full bg-transparent text-sm font-bold text-white border-0" />
+            <span class="text-xs text-gray-400 ml-1">Jam</span>
           </div>
-          <div class="bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-1.5 flex items-center">
-            <input id="input-mins" type="number" min="0" max="59" value="0" class="w-full bg-transparent text-sm font-bold text-white" />
-            <span class="text-xs text-slate-400 ml-1">Mnt</span>
+          <div class="inner-surface px-3 py-1.5 flex items-center">
+            <input id="input-mins" type="number" min="0" max="59" value="0" class="w-full bg-transparent text-sm font-bold text-white border-0" />
+            <span class="text-xs text-gray-400 ml-1">Mnt</span>
           </div>
         </div>
         <div class="flex justify-end gap-2 pt-2">
-          <button type="button" id="btn-cancel-add" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-300 bg-slate-800 cursor-pointer">Batal</button>
-          <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold text-slate-950 bg-amber-500 hover:bg-amber-400 cursor-pointer">Mulai Hitung Mundur</button>
+          <button type="button" id="btn-cancel-add" class="px-4 py-2 rounded-xl text-xs font-bold text-gray-300 bg-gray-800 cursor-pointer">Batal</button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold text-gray-900 bg-yellow-500 hover:bg-yellow-400 cursor-pointer">Mulai Hitung Mundur</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- Modal: Rename Account -->
-  <div id="modal-rename" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-[#151e31] border border-slate-700 rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4">
-      <h3 class="text-base font-extrabold text-white">Ubah Nama &amp; Tag Akun</h3>
+  <div id="modal-rename" class="hidden fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4">
+    <div class="card-surface max-w-sm w-full p-5 shadow-2xl space-y-4">
+      <h3 class="text-base font-extrabold text-white m-0">Ubah Nama &amp; Tag Akun</h3>
       <form id="form-rename" class="space-y-3">
-        <input id="rename-name-input" type="text" required class="w-full bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
-        <input id="rename-tag-input" type="text" class="w-full bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+        <input id="rename-name-input" type="text" required class="inner-surface w-full px-3 py-2 text-sm text-white" />
+        <input id="rename-tag-input" type="text" class="inner-surface w-full px-3 py-2 text-sm text-white" />
         <div class="flex justify-end gap-2">
-          <button type="button" id="btn-cancel-rename" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-300 bg-slate-800 cursor-pointer">Batal</button>
-          <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-950 bg-amber-500 cursor-pointer">Simpan</button>
+          <button type="button" id="btn-cancel-rename" class="px-4 py-2 rounded-xl text-xs font-bold text-gray-300 bg-gray-800 cursor-pointer">Batal</button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold text-gray-900 bg-yellow-500 cursor-pointer">Simpan</button>
         </div>
       </form>
     </div>
@@ -298,30 +322,15 @@
     // =========================================================================
     // TEMPEL KONFIGURASI FIREBASE MILIKMU DI SINI:
     // =========================================================================
-    <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
-
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyDIYsjU9ovYX3-9AdS-spRd4b3miqtfk1w",
-    authDomain: "coctracker-48917.firebaseapp.com",
-    databaseURL: "https://coctracker-48917-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "coctracker-48917",
-    storageBucket: "coctracker-48917.firebasestorage.app",
-    messagingSenderId: "639214435231",
-    appId: "1:639214435231:web:929e5228d42688a4b45baa",
-    measurementId: "G-20GKXRQFQ1"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-</script>
+    const FIREBASE_CONFIG = {
+      apiKey: "",
+      authDomain: "",
+      databaseURL: "",
+      projectId: "",
+      storageBucket: "",
+      messagingSenderId: "",
+      appId: ""
+    };
 
     const STORAGE_KEY = 'coc_multi_3acc_cloud_v1';
     const ROOM_KEY = 'coc_cloud_room_id_v1';
@@ -450,8 +459,8 @@
       const el = document.getElementById('cloud-status-badge');
       el.textContent = text;
       el.className = online
-        ? 'inline-flex items-center px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30'
-        : 'inline-flex items-center px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider bg-slate-700/60 text-slate-300 rounded-full border border-slate-600';
+        ? 'inline-flex items-center px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider bg-green-900 bg-opacity-50 text-green-300 rounded-full border border-green-500 border-opacity-40'
+        : 'inline-flex items-center px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider bg-gray-800 text-gray-300 rounded-full border border-gray-600';
     }
 
     function initFirebase() {
@@ -537,11 +546,11 @@
       const now = Date.now();
       const switcher = document.getElementById('account-switcher');
       const isOverview = state.selectedView === 'overview';
-      let swHtml = `<button data-select-view="overview" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold cursor-pointer ${isOverview ? 'bg-amber-500 text-slate-950' : 'bg-[#151e31] text-slate-300 border border-slate-800'}">Ringkasan 3 Akun</button>`;
+      let swHtml = `<button data-select-view="overview" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold cursor-pointer ${isOverview ? 'bg-yellow-500 text-gray-900' : 'card-surface text-gray-300'}">Ringkasan 3 Akun</button>`;
       state.accounts.forEach((acc) => {
         const hvBusy = (acc.upgrades || []).filter((u) => u.endsAt > now && (u.category === 'builder' || u.category === 'hero') && u.village !== 'BB').length;
         const sel = state.selectedView === acc.id;
-        swHtml += `<button data-select-view="${acc.id}" class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold cursor-pointer ${sel ? 'bg-amber-500 text-slate-950' : 'bg-[#151e31] text-slate-300 border border-slate-800'}"><span>${esc(acc.name)}</span><span class="text-[11px] opacity-75">${esc(acc.tag)} (${hvBusy}/${acc.totalBuilders})</span></button>`;
+        swHtml += `<button data-select-view="${acc.id}" class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold cursor-pointer ${sel ? 'bg-yellow-500 text-gray-900' : 'card-surface text-gray-300'}"><span>${esc(acc.name)}</span><span class="text-xs opacity-75">${esc(acc.tag)} (${hvBusy}/${acc.totalBuilders})</span></button>`;
       });
       switcher.innerHTML = swHtml;
 
@@ -555,26 +564,26 @@
           const active = ups.filter((u) => u.rem > 0).sort((a, b) => a.rem - b.rem);
           active.forEach((u) => allItems.push({ ...u, accountName: acc.name }));
           return `
-            <div class="bg-[#151e31] border border-slate-800 rounded-2xl p-4 space-y-3">
+            <div class="card-surface p-4 space-y-3">
               <div class="flex justify-between items-start">
-                <div><h3 class="text-base font-extrabold text-white">${esc(acc.name)}</h3><div class="text-xs text-slate-400 font-mono">${esc(acc.tag)} &bull; TH${acc.townHallLevel}</div></div>
-                <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300">${hvBusy.length}/${acc.totalBuilders} Tukang</span>
+                <div><h3 class="text-base font-extrabold text-white m-0">${esc(acc.name)}</h3><div class="text-xs text-gray-400 font-mono mt-0.5">${esc(acc.tag)} &bull; TH${acc.townHallLevel}</div></div>
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-yellow-500 bg-opacity-20 text-yellow-300">${hvBusy.length}/${acc.totalBuilders} Tukang</span>
               </div>
-              <div class="bg-[#0e131f] border border-slate-800 rounded-xl p-3 text-xs space-y-1.5">
-                <div class="flex justify-between"><span class="text-slate-400">Terdekat:</span><span class="font-bold font-mono-num text-emerald-400">${active[0] ? formatCountdown(active[0].rem) : 'Kosong'}</span></div>
-                <div class="text-slate-300 truncate">${active[0] ? esc(active[0].name) : 'Belum ada timer'}</div>
+              <div class="inner-surface p-3 text-xs space-y-1.5">
+                <div class="flex justify-between"><span class="text-gray-400">Terdekat:</span><span class="font-bold font-mono-num text-green-400">${active[0] ? formatCountdown(active[0].rem) : 'Kosong'}</span></div>
+                <div class="text-gray-300 truncate">${active[0] ? esc(active[0].name) : 'Belum ada timer'}</div>
               </div>
-              <button data-select-view="${acc.id}" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs py-2 rounded-xl cursor-pointer">Kelola Akun</button>
+              <button data-select-view="${acc.id}" class="w-full bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold text-xs py-2 rounded-xl cursor-pointer">Kelola Akun</button>
             </div>
           `;
         }).join('');
         allItems.sort((a, b) => a.rem - b.rem);
         document.getElementById('overview-total-active').textContent = `${allItems.length} Timer Aktif`;
         document.getElementById('overview-timeline').innerHTML = allItems.slice(0, 12).map((i) => `
-          <div class="bg-[#0e131f] border border-slate-800 rounded-xl p-3 space-y-1">
-            <div class="text-[11px] font-bold text-amber-300">${esc(i.accountName)}</div>
+          <div class="inner-surface p-3 space-y-1">
+            <div class="text-xs font-bold text-yellow-300">${esc(i.accountName)}</div>
             <div class="text-sm font-bold text-white truncate">${esc(i.name)} (Lv.${i.level})</div>
-            <div class="flex justify-between text-xs"><span class="font-mono-num font-bold text-emerald-400">${formatCountdown(i.rem)}</span><span class="text-slate-400">${formatCompletionTime(i.rem)}</span></div>
+            <div class="flex justify-between text-xs"><span class="font-mono-num font-bold text-green-400">${formatCountdown(i.rem)}</span><span class="text-gray-400">${formatCompletionTime(i.rem)}</span></div>
           </div>
         `).join('');
       } else {
@@ -589,44 +598,44 @@
         const free = Math.max(0, acc.totalBuilders - hvBusy.length);
         document.getElementById('builders-free-badge').textContent = free > 0 ? `${free} Tersedia` : 'Semua Sibuk';
         document.getElementById('builders-ratio').textContent = `${hvBusy.length} / ${acc.totalBuilders}`;
-        document.getElementById('builders-dots').innerHTML = Array.from({ length: acc.totalBuilders }).map((_, i) => `<div class="h-2.5 flex-1 rounded-full ${i < hvBusy.length ? 'bg-amber-400' : 'bg-slate-700'}"></div>`).join('');
+        document.getElementById('builders-dots').innerHTML = Array.from({ length: acc.totalBuilders }).map((_, i) => `<div class="h-2.5 flex-1 rounded-full ${i < hvBusy.length ? 'bg-yellow-400' : 'bg-gray-700'}"></div>`).join('');
 
         const active = ups.filter((u) => u.rem > 0).sort((a, b) => a.rem - b.rem);
         document.getElementById('next-finish-box').innerHTML = active[0]
-          ? `<div class="text-base font-extrabold text-white truncate">${esc(active[0].name)}</div><div class="text-sm font-bold text-emerald-400 font-mono-num">${formatCountdown(active[0].rem)}</div>`
-          : `<div class="text-sm text-slate-400">Belum ada timer</div>`;
+          ? `<div class="text-base font-extrabold text-white truncate">${esc(active[0].name)}</div><div class="text-sm font-bold text-green-400 font-mono-num">${formatCountdown(active[0].rem)}</div>`
+          : `<div class="text-sm text-gray-400">Belum ada timer</div>`;
 
         const labUp = ups.filter((u) => u.category === 'lab' && u.rem > 0);
         const bbUp = ups.filter((u) => u.village === 'BB' && u.rem > 0);
         document.getElementById('lab-bb-count').textContent = `${labUp.length + bbUp.length} Berjalan`;
         document.getElementById('lab-bb-box').innerHTML = `<div>Lab: ${labUp[0] ? esc(labUp[0].name) : 'Kosong'}</div><div>Desa Tukang: ${bbUp.length} aktif</div>`;
 
-        document.getElementById('builder-count-btns').innerHTML = [5, 6, 7].map((n) => `<button data-set-builders="${n}" class="px-2 py-0.5 rounded text-xs font-bold cursor-pointer ${acc.totalBuilders === n ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400'}">${n}</button>`).join('');
-        document.getElementById('gold-pass-btns').innerHTML = [0, 10, 15, 20].map((d) => `<button data-set-pass="${d}" class="px-2 py-0.5 rounded text-xs font-bold cursor-pointer ${acc.goldPassDiscount === d ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400'}">${d}%</button>`).join('');
+        document.getElementById('builder-count-btns').innerHTML = [5, 6, 7].map((n) => `<button data-set-builders="${n}" class="px-2 py-0.5 rounded text-xs font-bold cursor-pointer ${acc.totalBuilders === n ? 'bg-yellow-500 text-gray-900' : 'bg-gray-800 text-gray-400'}">${n}</button>`).join('');
+        document.getElementById('gold-pass-btns').innerHTML = [0, 10, 15, 20].map((d) => `<button data-set-pass="${d}" class="px-2 py-0.5 rounded text-xs font-bold cursor-pointer ${acc.goldPassDiscount === d ? 'bg-yellow-500 text-gray-900' : 'bg-gray-800 text-gray-400'}">${d}%</button>`).join('');
         document.getElementById('select-apprentice').value = String(acc.apprenticeLevel || 1);
 
         document.getElementById('helpers-grid').innerHTML = (acc.helpers || []).map((h) => {
           const rem = Math.max(0, ((h.cooldownEndsAt || 0) - now) / 1000);
-          return `<div class="bg-[#0e131f] border border-slate-800 rounded-xl px-3 py-2 flex justify-between items-center text-xs"><span class="font-bold text-white">${esc(h.name)} Lv.${h.lvl}</span><span class="font-mono-num text-amber-300">${rem > 0 ? formatCountdown(rem) : 'Siap'}</span></div>`;
+          return `<div class="inner-surface px-3 py-2 flex justify-between items-center text-xs"><span class="font-bold text-white">${esc(h.name)} Lv.${h.lvl}</span><span class="font-mono-num text-yellow-300">${rem > 0 ? formatCountdown(rem) : 'Siap'}</span></div>`;
         }).join('');
 
         const tabs = [{ id: 'all', label: 'Semua' }, { id: 'builder', label: 'Bangunan' }, { id: 'hero', label: 'Hero' }, { id: 'lab', label: 'Lab' }, { id: 'pet', label: 'Pet' }];
-        document.getElementById('filter-tabs').innerHTML = tabs.map((t) => `<button data-tab="${t.id}" class="px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer ${state.activeTab === t.id ? 'bg-amber-500 text-slate-950' : 'bg-[#151e31] text-slate-400 border border-slate-800'}">${t.label}</button>`).join('');
+        document.getElementById('filter-tabs').innerHTML = tabs.map((t) => `<button data-tab="${t.id}" class="px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer ${state.activeTab === t.id ? 'bg-yellow-500 text-gray-900' : 'card-surface text-gray-400'}">${t.label}</button>`).join('');
 
         const filtered = (state.activeTab === 'all' ? ups : ups.filter((u) => u.category === state.activeTab)).sort((a, b) => a.rem - b.rem);
         document.getElementById('upgrades-grid').innerHTML = filtered.map((item) => {
           const pct = Math.min(100, Math.max(0, ((item.totalSeconds - item.rem) / Math.max(1, item.totalSeconds)) * 100));
           return `
-            <div class="bg-[#151e31] border border-slate-800 rounded-2xl p-4 space-y-3">
-              <div class="flex justify-between items-center"><span class="text-sm font-extrabold text-white truncate">${esc(item.name)} (Lv.${item.level})</span><button data-remove="${item.id}" class="text-xs text-slate-500 hover:text-rose-400 cursor-pointer">&#10005;</button></div>
-              <div class="bg-[#0e131f] border border-slate-800 rounded-xl p-3">
-                <div class="text-xl font-black font-mono-num ${item.rem <= 0 ? 'text-emerald-400' : 'text-amber-400'}">${formatCountdown(item.rem)}</div>
-                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden mt-2"><div class="h-full bg-amber-400" style="width:${pct}%"></div></div>
-                <div class="text-[11px] text-slate-400 mt-1.5">${formatCompletionTime(item.rem)}</div>
+            <div class="card-surface p-4 space-y-3">
+              <div class="flex justify-between items-center"><span class="text-sm font-extrabold text-white truncate">${esc(item.name)} (Lv.${item.level})</span><button data-remove="${item.id}" class="text-xs text-gray-400 hover:text-red-400 cursor-pointer">&#10005;</button></div>
+              <div class="inner-surface p-3">
+                <div class="text-xl font-black font-mono-num ${item.rem <= 0 ? 'text-green-400' : 'text-yellow-400'}">${formatCountdown(item.rem)}</div>
+                <div class="w-full h-2 bg-gray-800 rounded-full overflow-hidden mt-2"><div class="h-full bg-yellow-400" style="width:${pct}%"></div></div>
+                <div class="text-xs text-gray-400 mt-1.5">${formatCompletionTime(item.rem)}</div>
               </div>
               <div class="flex justify-between gap-2">
-                <button data-apprentice="${item.id}" class="flex-1 bg-indigo-500/20 text-indigo-300 text-xs font-bold py-1.5 rounded-lg cursor-pointer">Magang (-${acc.apprenticeLevel}j)</button>
-                <button data-finish="${item.id}" class="bg-emerald-500/20 text-emerald-300 text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer">Selesai</button>
+                <button data-apprentice="${item.id}" class="flex-1 bg-indigo-900 bg-opacity-40 text-indigo-300 text-xs font-bold py-1.5 rounded-lg cursor-pointer">Magang (-${acc.apprenticeLevel}j)</button>
+                <button data-finish="${item.id}" class="bg-green-900 bg-opacity-40 text-green-300 text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer">Selesai</button>
               </div>
             </div>
           `;
@@ -636,7 +645,7 @@
         if (!acc.heroRoster || !acc.heroRoster.length) hSec.classList.add('hidden');
         else {
           hSec.classList.remove('hidden');
-          document.getElementById('hero-roster-grid').innerHTML = acc.heroRoster.map((h) => `<div class="bg-[#0e131f] border border-slate-800 rounded-xl p-2.5 text-xs"><div class="font-bold text-white truncate">${esc(h.name)}</div><div class="text-purple-300 font-extrabold mt-1">Lv.${h.lvl}</div></div>`).join('');
+          document.getElementById('hero-roster-grid').innerHTML = acc.heroRoster.map((h) => `<div class="inner-surface p-2.5 text-xs"><div class="font-bold text-white truncate">${esc(h.name)}</div><div class="text-purple-300 font-extrabold mt-1">Lv.${h.lvl}</div></div>`).join('');
         }
       }
     }
