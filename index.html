@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clash Builder 3-Account Cloud Sync</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    .font-mono-num { font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body class="min-h-screen bg-[#0e131f] text-slate-100 pb-14 selection:bg-amber-500 selection:text-slate-950">
+
+  <div id="toast" class="hidden fixed bottom-5 right-5 z-50 flex items-center gap-2.5 bg-amber-500 text-slate-950 font-semibold px-4 py-3 rounded-xl shadow-2xl border-2 border-amber-300">
+    <span class="text-base">&#10024;</span>
+    <span id="toast-msg" class="text-sm"></span>
+  </div>
+
+  <header class="bg-gradient-to-b from-[#1b2438] to-[#0e131f] border-b border-amber-500/20 px-4 sm:px-6 py-5">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div class="flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-orange-600 p-0.5 shadow-lg shadow-amber-500/20 shrink-0">
+          <div class="w-full h-full bg-[#131b2e] rounded-[14px] flex items-center justify-center text-2xl">&#128296;</div>
+        </div>
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+              Clash Builder <span class="text-amber-400">3-Account Cloud Sync</span>
+            </h1>
+            <span id="cloud-status-badge" class="inline-flex items-center px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider bg-slate-700/60 text-slate-300 rounded-full border border-slate-600">
+              Mode Lokal
+            </span>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-400">
+            Pantau 3 akun sekaligus &bull; Timer timestamp permanen &bull; Sinkron otomatis HP &amp; Laptop via Firebase
+          </p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <button id="btn-open-sync" class="flex items-center gap-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold text-xs sm:text-sm px-3 py-2.5 rounded-xl transition cursor-pointer">
+          <span>&#9729;</span> Kode Sync
+        </button>
+        <button id="btn-open-json" class="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs sm:text-sm px-3.5 py-2.5 rounded-xl shadow-lg shadow-indigo-500/20 transition cursor-pointer">
+          <span>&#128196;</span> Impor JSON
+        </button>
+        <button id="btn-open-add" class="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs sm:text-sm px-3.5 py-2.5 rounded-xl shadow-lg shadow-amber-500/20 transition cursor-pointer">
+          <span>&#43;</span> Tambah
+        </button>
+      </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto mt-5 flex flex-wrap items-center gap-2" id="account-switcher"></div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 mt-5 space-y-6">
+    <section id="view-overview" class="space-y-6 hidden">
+      <div id="overview-cards" class="grid grid-cols-1 lg:grid-cols-3 gap-4"></div>
+      <div class="bg-[#151e31] border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-sm sm:text-base font-extrabold text-white">Jadwal Selesai Terdekat (Gabungan 3 Akun)</h2>
+            <p class="text-xs text-slate-400">Urutan pembangunan atau riset paling cepat selesai di antara semua akun</p>
+          </div>
+          <span id="overview-total-active" class="text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-lg">0 Aktif</span>
+        </div>
+        <div id="overview-timeline" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+      </div>
+    </section>
+
+    <section id="view-account" class="space-y-6 hidden">
+      <div class="bg-[#151e31]/90 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-md">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-300">
+            <span id="acc-summary-title" class="text-sm font-extrabold text-white">Akun 1</span>
+            <span id="acc-tag-badge" class="bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md">#P92YY0CP</span>
+            <span id="acc-th-badge" class="bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md">TH 17</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="btn-rename-acc" class="text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 cursor-pointer">Ubah Nama</button>
+            <button id="btn-clear-done" class="text-xs font-bold bg-slate-800 hover:bg-slate-700 text-emerald-300 px-3 py-1.5 rounded-lg border border-slate-700 cursor-pointer">Bersihkan Selesai</button>
+            <button id="btn-reset-acc" class="text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 cursor-pointer">Reset Akun</button>
+          </div>
+        </div>
+        <div id="helpers-grid" class="pt-2.5 border-t border-slate-800/90 grid grid-cols-1 sm:grid-cols-3 gap-2.5"></div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div class="bg-[#151e31] border border-amber-500/25 rounded-2xl p-4 shadow-lg">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-amber-400/90">Pondok Tukang</span>
+            <span id="builders-free-badge" class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">1 Tersedia</span>
+          </div>
+          <div class="mt-2 flex items-baseline gap-2">
+            <span id="builders-ratio" class="text-3xl font-black text-white">0 / 6</span>
+            <span class="text-xs text-slate-400">Desa Utama</span>
+          </div>
+          <div id="builders-dots" class="mt-3 flex items-center gap-1.5"></div>
+        </div>
+
+        <div class="bg-[#151e31] border border-slate-700/80 rounded-2xl p-4 shadow-lg">
+          <span class="text-xs font-bold uppercase tracking-wider text-sky-400">Selesai Terdekat</span>
+          <div id="next-finish-box" class="mt-2"></div>
+        </div>
+
+        <div class="bg-[#151e31] border border-cyan-500/25 rounded-2xl p-4 shadow-lg">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-cyan-400">Lab &amp; Desa Tukang</span>
+            <span id="lab-bb-count" class="text-xs font-semibold text-slate-400">0 Berjalan</span>
+          </div>
+          <div id="lab-bb-box" class="mt-2 space-y-1.5 text-xs"></div>
+        </div>
+
+        <div class="bg-[#151e31] border border-slate-700/80 rounded-2xl p-4 shadow-lg flex flex-col justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-purple-400">Pengaturan Akun</span>
+          <div class="mt-2 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-slate-300">Tukang:</span>
+              <div id="builder-count-btns" class="flex items-center gap-1"></div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-slate-300">Gold Pass:</span>
+              <div id="gold-pass-btns" class="flex items-center gap-1"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-gradient-to-r from-[#17223b] via-[#1a2540] to-[#17223b] border border-indigo-500/30 rounded-2xl p-4 shadow-lg flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div class="text-xs text-slate-300">
+          <strong class="text-white text-sm block">Simulasi Item Sihir (Khusus Akun Ini)</strong>
+          Percepat timestamp selesai secara permanen &amp; otomatis tersinkron ke perangkat lain.
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="btn-potion-builder" class="bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 px-3 py-2 rounded-xl text-xs font-bold cursor-pointer">Ramuan Tukang (-9j)</button>
+          <button id="btn-potion-lab" class="bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 px-3 py-2 rounded-xl text-xs font-bold cursor-pointer">Ramuan Riset (-23j)</button>
+          <button id="btn-potion-pet" class="bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 px-3 py-2 rounded-xl text-xs font-bold cursor-pointer">Ramuan Pet (-23j)</button>
+          <select id="select-apprentice" class="bg-slate-800 text-amber-300 text-xs font-bold rounded-xl px-2.5 py-2 border border-slate-700">
+            <option value="1">Magang Lv.1 (-1j)</option>
+            <option value="2">Magang Lv.2 (-2j)</option>
+            <option value="3">Magang Lv.3 (-3j)</option>
+            <option value="4">Magang Lv.4 (-4j)</option>
+            <option value="5">Magang Lv.5 (-5j)</option>
+            <option value="6">Magang Lv.6 (-6j)</option>
+            <option value="7">Magang Lv.7 (-7j)</option>
+            <option value="8">Magang Lv.8 (-8j)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+        <div id="filter-tabs" class="flex flex-wrap items-center gap-1.5"></div>
+      </div>
+
+      <div id="upgrades-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+      <div id="hero-roster-section" class="bg-[#151e31] border border-purple-500/25 rounded-2xl p-4 sm:p-5 shadow-lg space-y-3">
+        <h2 id="hero-roster-title" class="text-sm sm:text-base font-extrabold text-white">Daftar Level Pahlawan</h2>
+        <div id="hero-roster-grid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal: Cloud Sync Room ID -->
+  <div id="modal-sync" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-[#151e31] border border-emerald-500/40 rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-extrabold text-white">Pengaturan Cloud Sync (HP &amp; Laptop)</h3>
+        <button id="btn-close-sync" class="text-slate-400 hover:text-white text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-800 cursor-pointer">Tutup</button>
+      </div>
+      <form id="form-sync" class="space-y-3">
+        <p class="text-xs text-slate-300">Masukkan <strong>Kode Sinkronisasi</strong> yang sama di HP dan laptop agar seluruh data 3 akun tersinkron otomatis.</p>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Kode Sinkronisasi (Room ID)</label>
+          <input id="sync-room-input" type="text" required class="w-full bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-2 text-sm font-mono text-emerald-300 focus:outline-none focus:border-emerald-400" />
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" id="btn-cancel-sync" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 cursor-pointer">Batal</button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 cursor-pointer">Hubungkan &amp; Sinkronkan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Import JSON -->
+  <div id="modal-json" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-[#151e31] border border-indigo-500/40 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 my-8">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-extrabold text-white">Impor JSON Desa Clash of Clans</h3>
+        <button id="btn-close-json" class="text-slate-400 hover:text-white text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-800 cursor-pointer">Tutup</button>
+      </div>
+      <form id="form-json" class="space-y-3.5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Pilih Slot Akun Tujuan:</label>
+          <select id="json-target-account" class="w-full bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tempel Data JSON Desa:</label>
+          <textarea id="json-textarea" rows="6" required placeholder='{"tag":"#...","timestamp":...,"buildings":[...]}' class="w-full bg-[#0e131f] border border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-200"></textarea>
+        </div>
+        <div class="flex items-center justify-end gap-2">
+          <button type="button" id="btn-cancel-json" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-300 bg-slate-800 cursor-pointer">Batal</button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-indigo-500 hover:bg-indigo-400 cursor-pointer">Sinkronkan Akun</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add Upgrade -->
+  <div id="modal-add" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-[#151e31] border border-amber-500/40 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 my-8">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-extrabold text-white">Tambah Pembangunan Baru</h3>
+        <button id="btn-close-add" class="text-slate-400 hover:text-white text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-800 cursor-pointer">Tutup</button>
+      </div>
+      <form id="form-add" class="space-y-3.5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Masukkan ke Akun:</label>
+          <select id="add-target-account" class="w-full bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white"></select>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Nama Bangunan / Hero / Riset</label>
+            <input id="input-name" type="text" required value="Menara Inferno" class="w-full bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Menuju Level</label>
+            <input id="input-level" type="number" min="1" max="120" required value="10" class="w-full bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Kategori</label>
+            <select id="input-category" class="w-full bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+              <option value="builder">Bangunan</option>
+              <option value="hero">Hero</option>
+              <option value="lab">Laboratorium</option>
+              <option value="pet">Pet House</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Resource</label>
+            <select id="input-resource" class="w-full bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+              <option value="Gold">Gold</option>
+              <option value="Elixir">Elixir</option>
+              <option value="Dark Elixir">Dark Elixir</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Biaya</label>
+            <input id="input-cost" type="text" value="19.0M" class="w-full bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2.5">
+          <div class="bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-1.5 flex items-center">
+            <input id="input-days" type="number" min="0" max="30" value="5" class="w-full bg-transparent text-sm font-bold text-white" />
+            <span class="text-xs text-slate-400 ml-1">Hari</span>
+          </div>
+          <div class="bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-1.5 flex items-center">
+            <input id="input-hours" type="number" min="0" max="23" value="0" class="w-full bg-transparent text-sm font-bold text-white" />
+            <span class="text-xs text-slate-400 ml-1">Jam</span>
+          </div>
+          <div class="bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-1.5 flex items-center">
+            <input id="input-mins" type="number" min="0" max="59" value="0" class="w-full bg-transparent text-sm font-bold text-white" />
+            <span class="text-xs text-slate-400 ml-1">Mnt</span>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" id="btn-cancel-add" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-300 bg-slate-800 cursor-pointer">Batal</button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold text-slate-950 bg-amber-500 hover:bg-amber-400 cursor-pointer">Mulai Hitung Mundur</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Rename Account -->
+  <div id="modal-rename" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-[#151e31] border border-slate-700 rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4">
+      <h3 class="text-base font-extrabold text-white">Ubah Nama &amp; Tag Akun</h3>
+      <form id="form-rename" class="space-y-3">
+        <input id="rename-name-input" type="text" required class="w-full bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+        <input id="rename-tag-input" type="text" class="w-full bg-[#0e131f] border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+        <div class="flex justify-end gap-2">
+          <button type="button" id="btn-cancel-rename" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-300 bg-slate-800 cursor-pointer">Batal</button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-950 bg-amber-500 cursor-pointer">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // TEMPEL KONFIGURASI FIREBASE MILIKMU DI SINI:
+    // =========================================================================
+    const FIREBASE_CONFIG = {
+      apiKey: "",
+      authDomain: "",
+      databaseURL: "",
+      projectId: "",
+      storageBucket: "",
+      messagingSenderId: "",
+      appId: ""
+    };
+
+    const STORAGE_KEY = 'coc_multi_3acc_cloud_v1';
+    const ROOM_KEY = 'coc_cloud_room_id_v1';
+
+    const COC_ID_MAP = {
+      1000001: { name: 'Balai Kota (Town Hall)', category: 'builder', resource: 'Gold', defaultTotalSec: 14 * 86400 },
+      1000027: { name: 'Menara Inferno', category: 'builder', resource: 'Gold', defaultTotalSec: 5 * 86400 },
+      1000084: { name: 'Menara Perserikatan Pemanah', category: 'builder', resource: 'Gold', defaultTotalSec: 6 * 86400 },
+      1000085: { name: 'Meriam Pantul', category: 'builder', resource: 'Gold', defaultTotalSec: 6 * 86400 },
+      1000106: { name: 'Barak Skuad', category: 'builder', resource: 'Elixir', defaultTotalSec: 4 * 86400 },
+      1000063: { name: 'Peluncur Lava (Desa Tukang)', category: 'builder', resource: 'Gold', defaultTotalSec: 10 * 86400 },
+      4000006: { name: 'Penyihir (Wizard)', category: 'lab', resource: 'Elixir', defaultTotalSec: 5 * 86400 },
+      28000000: { name: 'Raja Barbar', category: 'hero', resource: 'Dark Elixir', defaultTotalSec: 6 * 86400 },
+      28000001: { name: 'Ratu Pemanah', category: 'hero', resource: 'Dark Elixir', defaultTotalSec: 6 * 86400 },
+      28000002: { name: 'Wali Besar', category: 'hero', resource: 'Elixir', defaultTotalSec: 6 * 86400 },
+      28000003: { name: 'Mesin Pertempuran', category: 'hero', resource: 'Elixir', defaultTotalSec: 5 * 86400 },
+      28000004: { name: 'Jawara Kerajaan', category: 'hero', resource: 'Dark Elixir', defaultTotalSec: 6 * 86400 },
+      28000005: { name: 'Kopter Tempur', category: 'hero', resource: 'Elixir', defaultTotalSec: 5 * 86400 },
+      28000006: { name: 'Pangeran Minion', category: 'hero', resource: 'Dark Elixir', defaultTotalSec: 6 * 86400 },
+      28000007: { name: 'Adipati Naga', category: 'hero', resource: 'Dark Elixir', defaultTotalSec: 5 * 86400 },
+      93000000: { name: 'Tukang Magang', role: 'Mempercepat Tukang 2j/hari' },
+      93000001: { name: 'Asisten Lab', role: 'Mempercepat Riset Lab 1j/hari' },
+      93000002: { name: 'Prospektor', role: 'Konversi Ore Harian' }
+    };
+
+    const USER_EXPORT_JSON = {
+      tag: '#P92YY0CP',
+      helpers: [
+        { data: 93000000, lvl: 2, helper_cooldown: 42566 },
+        { data: 93000001, lvl: 1, helper_cooldown: 42566 },
+        { data: 93000002, lvl: 2 }
+      ],
+      buildings: [
+        { data: 1000001, lvl: 17 },
+        { data: 1000027, lvl: 10, timer: 61702 },
+        { data: 1000027, lvl: 9, timer: 18636 },
+        { data: 1000084, lvl: 2, timer: 89023 },
+        { data: 1000085, lvl: 2, timer: 89039 },
+        { data: 1000085, lvl: 2, timer: 119921, helper_recurrent: true },
+        { data: 1000106, lvl: 0, timer: 93394 }
+      ],
+      units: [{ data: 4000006, lvl: 10, timer: 171987, helper_recurrent: true }],
+      heroes: [
+        { data: 28000000, lvl: 58 }, { data: 28000001, lvl: 62 }, { data: 28000002, lvl: 40 },
+        { data: 28000004, lvl: 30 }, { data: 28000006, lvl: 45 }, { data: 28000007, lvl: 10 }
+      ],
+      buildings2: [{ data: 1000063, lvl: 8, timer: 822093 }],
+      heroes2: [{ data: 28000003, lvl: 32 }, { data: 28000005, lvl: 30, timer: 196389 }]
+    };
+
+    function parseVillageExport(jsonObj, anchorNowMs) {
+      const upgrades = [];
+      const nameCounts = {};
+      const pushUpgrade = (item, fallbackCat, villageTag) => {
+        if (!item || typeof item.timer !== 'number' || item.timer <= 0) return;
+        const mapped = COC_ID_MAP[item.data] || { name: `Item #${item.data}`, category: fallbackCat, resource: fallbackCat === 'lab' ? 'Elixir' : 'Gold', defaultTotalSec: Math.max(item.timer * 1.35, 86400) };
+        nameCounts[mapped.name] = (nameCounts[mapped.name] || 0) + 1;
+        const suffix = nameCounts[mapped.name] > 1 ? ` #${nameCounts[mapped.name]}` : '';
+        const currentLvl = typeof item.lvl === 'number' ? item.lvl : 0;
+        upgrades.push({
+          id: `up-${upgrades.length + 1}-${anchorNowMs}-${Math.random().toString(36).slice(2, 5)}`,
+          name: `${mapped.name}${suffix}`,
+          level: currentLvl + 1,
+          category: mapped.category,
+          resource: mapped.resource,
+          cost: villageTag === 'BB' ? 'Desa Tukang' : `Dari Lv.${currentLvl}`,
+          totalSeconds: Math.max(item.timer + 3600, mapped.defaultTotalSec || item.timer * 1.25),
+          endsAt: anchorNowMs + item.timer * 1000,
+          village: villageTag
+        });
+      };
+      (jsonObj.buildings || []).forEach((b) => pushUpgrade(b, 'builder', 'HV'));
+      (jsonObj.heroes || []).forEach((h) => pushUpgrade(h, 'hero', 'HV'));
+      (jsonObj.units || []).forEach((u) => pushUpgrade(u, 'lab', 'HV'));
+      (jsonObj.spells || []).forEach((s) => pushUpgrade(s, 'lab', 'HV'));
+      (jsonObj.pets || []).forEach((p) => pushUpgrade(p, 'pet', 'HV'));
+      (jsonObj.buildings2 || []).forEach((b) => pushUpgrade(b, 'builder', 'BB'));
+      (jsonObj.heroes2 || []).forEach((h) => pushUpgrade(h, 'hero', 'BB'));
+
+      const thEntry = (jsonObj.buildings || []).find((b) => b.data === 1000001);
+      const helpers = (jsonObj.helpers || []).map((h) => {
+        const info = COC_ID_MAP[h.data] || { name: `Helper #${h.data}`, role: 'Pembantu Desa' };
+        return { id: h.data, name: info.name, role: info.role, lvl: h.lvl || 1, cooldownEndsAt: h.helper_cooldown ? anchorNowMs + h.helper_cooldown * 1000 : 0 };
+      });
+      const heroRoster = [
+        ...(jsonObj.heroes || []).map((h) => ({ id: h.data, name: COC_ID_MAP[h.data]?.name || `Hero #${h.data}`, lvl: h.lvl, upgrading: Boolean(h.timer), village: 'Desa Utama' })),
+        ...(jsonObj.heroes2 || []).map((h) => ({ id: h.data, name: COC_ID_MAP[h.data]?.name || `Hero #${h.data}`, lvl: h.lvl, upgrading: Boolean(h.timer), village: 'Desa Tukang' }))
+      ];
+      return { tag: jsonObj.tag || '#UNKNOWN', townHallLevel: thEntry ? thEntry.lvl : 1, upgrades, helpers, heroRoster };
+    }
+
+    function createInitialState() {
+      const now = Date.now();
+      return {
+        updatedAt: now,
+        selectedView: 'overview',
+        activeTab: 'all',
+        accounts: [
+          { id: 'acc-1', name: 'Akun Utama', totalBuilders: 7, goldPassDiscount: 0, apprenticeLevel: 2, ...parseVillageExport(USER_EXPORT_JSON, now) },
+          { id: 'acc-2', name: 'Akun Kedua', totalBuilders: 6, goldPassDiscount: 0, apprenticeLevel: 1, tag: '#AKUN2', townHallLevel: 14, upgrades: [], helpers: [], heroRoster: [] },
+          { id: 'acc-3', name: 'Akun Ketiga', totalBuilders: 5, goldPassDiscount: 0, apprenticeLevel: 1, tag: '#AKUN3', townHallLevel: 12, upgrades: [], helpers: [], heroRoster: [] }
+        ]
+      };
+    }
+
+    function loadLocalState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const p = JSON.parse(raw);
+          if (p && Array.isArray(p.accounts) && p.accounts.length === 3) return p;
+        }
+      } catch {}
+      return createInitialState();
+    }
+
+    let state = loadLocalState();
+    let roomId = 'desa-p92yy0cp';
+    try { roomId = localStorage.getItem(ROOM_KEY) || 'desa-p92yy0cp'; } catch {}
+
+    let db = null;
+    let dbListenerRef = null;
+    let toastTimeout = null;
+
+    function setCloudBadge(text, online) {
+      const el = document.getElementById('cloud-status-badge');
+      el.textContent = text;
+      el.className = online
+        ? 'inline-flex items-center px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30'
+        : 'inline-flex items-center px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider bg-slate-700/60 text-slate-300 rounded-full border border-slate-600';
+    }
+
+    function initFirebase() {
+      if (!FIREBASE_CONFIG.databaseURL || !FIREBASE_CONFIG.apiKey || typeof firebase === 'undefined') {
+        setCloudBadge('Mode Lokal (Isi Firebase Config)', false);
+        return;
+      }
+      try {
+        if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+        db = firebase.database();
+        attachRoomListener(roomId);
+      } catch {
+        setCloudBadge('Firebase Error (Mode Lokal)', false);
+      }
+    }
+
+    function attachRoomListener(targetRoom) {
+      if (!db) return;
+      if (dbListenerRef) dbListenerRef.off();
+      const cleanRoom = targetRoom.replace(/[^a-zA-Z0-9_-]/g, '') || 'desa-default';
+      roomId = cleanRoom;
+      try { localStorage.setItem(ROOM_KEY, roomId); } catch {}
+      dbListenerRef = db.ref('villages/' + roomId);
+      setCloudBadge(`Cloud Sync: ${roomId}`, true);
+      dbListenerRef.on('value', (snap) => {
+        const remote = snap.val();
+        if (remote && Array.isArray(remote.accounts) && (remote.updatedAt || 0) > (state.updatedAt || 0)) {
+          state = remote;
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+          render();
+        }
+      });
+    }
+
+    function persist() {
+      state.updatedAt = Date.now();
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+      if (db && roomId) {
+        db.ref('villages/' + roomId).set(state).catch(() => {});
+      }
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      document.getElementById('toast-msg').textContent = msg;
+      el.classList.remove('hidden');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => el.classList.add('hidden'), 3200);
+    }
+
+    function formatCountdown(sec) {
+      const s = Math.max(0, Math.floor(sec));
+      if (s === 0) return 'Selesai!';
+      const d = Math.floor(s / 86400);
+      const h = Math.floor((s % 86400) / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const remS = s % 60;
+      const parts = [];
+      if (d > 0) parts.push(`${d}h`);
+      if (h > 0 || d > 0) parts.push(`${h}j`);
+      parts.push(`${m}m`);
+      parts.push(`${remS < 10 ? '0' : ''}${remS}d`);
+      return parts.join(' ');
+    }
+
+    function formatCompletionTime(remainingSec) {
+      if (remainingSec <= 0) return 'Siap diklaim';
+      const f = new Date(Date.now() + remainingSec * 1000);
+      const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      return `${days[f.getDay()]}, ${f.getDate()} ${months[f.getMonth()]} &bull; ${String(f.getHours()).padStart(2, '0')}:${String(f.getMinutes()).padStart(2, '0')}`;
+    }
+
+    function esc(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function getActiveAccount() {
+      return state.accounts.find((a) => a.id === state.selectedView) || state.accounts[0];
+    }
+
+    function render() {
+      const now = Date.now();
+      const switcher = document.getElementById('account-switcher');
+      const isOverview = state.selectedView === 'overview';
+      let swHtml = `<button data-select-view="overview" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold cursor-pointer ${isOverview ? 'bg-amber-500 text-slate-950' : 'bg-[#151e31] text-slate-300 border border-slate-800'}">Ringkasan 3 Akun</button>`;
+      state.accounts.forEach((acc) => {
+        const hvBusy = (acc.upgrades || []).filter((u) => u.endsAt > now && (u.category === 'builder' || u.category === 'hero') && u.village !== 'BB').length;
+        const sel = state.selectedView === acc.id;
+        swHtml += `<button data-select-view="${acc.id}" class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold cursor-pointer ${sel ? 'bg-amber-500 text-slate-950' : 'bg-[#151e31] text-slate-300 border border-slate-800'}"><span>${esc(acc.name)}</span><span class="text-[11px] opacity-75">${esc(acc.tag)} (${hvBusy}/${acc.totalBuilders})</span></button>`;
+      });
+      switcher.innerHTML = swHtml;
+
+      if (isOverview) {
+        document.getElementById('view-overview').classList.remove('hidden');
+        document.getElementById('view-account').classList.add('hidden');
+        const allItems = [];
+        document.getElementById('overview-cards').innerHTML = state.accounts.map((acc) => {
+          const ups = (acc.upgrades || []).map((u) => ({ ...u, rem: Math.max(0, (u.endsAt - now) / 1000) }));
+          const hvBusy = ups.filter((u) => (u.category === 'builder' || u.category === 'hero') && u.village !== 'BB' && u.rem > 0);
+          const active = ups.filter((u) => u.rem > 0).sort((a, b) => a.rem - b.rem);
+          active.forEach((u) => allItems.push({ ...u, accountName: acc.name }));
+          return `
+            <div class="bg-[#151e31] border border-slate-800 rounded-2xl p-4 space-y-3">
+              <div class="flex justify-between items-start">
+                <div><h3 class="text-base font-extrabold text-white">${esc(acc.name)}</h3><div class="text-xs text-slate-400 font-mono">${esc(acc.tag)} &bull; TH${acc.townHallLevel}</div></div>
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300">${hvBusy.length}/${acc.totalBuilders} Tukang</span>
+              </div>
+              <div class="bg-[#0e131f] border border-slate-800 rounded-xl p-3 text-xs space-y-1.5">
+                <div class="flex justify-between"><span class="text-slate-400">Terdekat:</span><span class="font-bold font-mono-num text-emerald-400">${active[0] ? formatCountdown(active[0].rem) : 'Kosong'}</span></div>
+                <div class="text-slate-300 truncate">${active[0] ? esc(active[0].name) : 'Belum ada timer'}</div>
+              </div>
+              <button data-select-view="${acc.id}" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs py-2 rounded-xl cursor-pointer">Kelola Akun</button>
+            </div>
+          `;
+        }).join('');
+        allItems.sort((a, b) => a.rem - b.rem);
+        document.getElementById('overview-total-active').textContent = `${allItems.length} Timer Aktif`;
+        document.getElementById('overview-timeline').innerHTML = allItems.slice(0, 12).map((i) => `
+          <div class="bg-[#0e131f] border border-slate-800 rounded-xl p-3 space-y-1">
+            <div class="text-[11px] font-bold text-amber-300">${esc(i.accountName)}</div>
+            <div class="text-sm font-bold text-white truncate">${esc(i.name)} (Lv.${i.level})</div>
+            <div class="flex justify-between text-xs"><span class="font-mono-num font-bold text-emerald-400">${formatCountdown(i.rem)}</span><span class="text-slate-400">${formatCompletionTime(i.rem)}</span></div>
+          </div>
+        `).join('');
+      } else {
+        document.getElementById('view-overview').classList.add('hidden');
+        document.getElementById('view-account').classList.remove('hidden');
+        const acc = getActiveAccount();
+        const ups = (acc.upgrades || []).map((u) => ({ ...u, rem: Math.max(0, (u.endsAt - now) / 1000) }));
+        document.getElementById('acc-summary-title').textContent = acc.name;
+        document.getElementById('acc-tag-badge').textContent = acc.tag;
+        document.getElementById('acc-th-badge').textContent = `TH ${acc.townHallLevel}`;
+        const hvBusy = ups.filter((u) => (u.category === 'builder' || u.category === 'hero') && u.village !== 'BB' && u.rem > 0);
+        const free = Math.max(0, acc.totalBuilders - hvBusy.length);
+        document.getElementById('builders-free-badge').textContent = free > 0 ? `${free} Tersedia` : 'Semua Sibuk';
+        document.getElementById('builders-ratio').textContent = `${hvBusy.length} / ${acc.totalBuilders}`;
+        document.getElementById('builders-dots').innerHTML = Array.from({ length: acc.totalBuilders }).map((_, i) => `<div class="h-2.5 flex-1 rounded-full ${i < hvBusy.length ? 'bg-amber-400' : 'bg-slate-700'}"></div>`).join('');
+
+        const active = ups.filter((u) => u.rem > 0).sort((a, b) => a.rem - b.rem);
+        document.getElementById('next-finish-box').innerHTML = active[0]
+          ? `<div class="text-base font-extrabold text-white truncate">${esc(active[0].name)}</div><div class="text-sm font-bold text-emerald-400 font-mono-num">${formatCountdown(active[0].rem)}</div>`
+          : `<div class="text-sm text-slate-400">Belum ada timer</div>`;
+
+        const labUp = ups.filter((u) => u.category === 'lab' && u.rem > 0);
+        const bbUp = ups.filter((u) => u.village === 'BB' && u.rem > 0);
+        document.getElementById('lab-bb-count').textContent = `${labUp.length + bbUp.length} Berjalan`;
+        document.getElementById('lab-bb-box').innerHTML = `<div>Lab: ${labUp[0] ? esc(labUp[0].name) : 'Kosong'}</div><div>Desa Tukang: ${bbUp.length} aktif</div>`;
+
+        document.getElementById('builder-count-btns').innerHTML = [5, 6, 7].map((n) => `<button data-set-builders="${n}" class="px-2 py-0.5 rounded text-xs font-bold cursor-pointer ${acc.totalBuilders === n ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400'}">${n}</button>`).join('');
+        document.getElementById('gold-pass-btns').innerHTML = [0, 10, 15, 20].map((d) => `<button data-set-pass="${d}" class="px-2 py-0.5 rounded text-xs font-bold cursor-pointer ${acc.goldPassDiscount === d ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400'}">${d}%</button>`).join('');
+        document.getElementById('select-apprentice').value = String(acc.apprenticeLevel || 1);
+
+        document.getElementById('helpers-grid').innerHTML = (acc.helpers || []).map((h) => {
+          const rem = Math.max(0, ((h.cooldownEndsAt || 0) - now) / 1000);
+          return `<div class="bg-[#0e131f] border border-slate-800 rounded-xl px-3 py-2 flex justify-between items-center text-xs"><span class="font-bold text-white">${esc(h.name)} Lv.${h.lvl}</span><span class="font-mono-num text-amber-300">${rem > 0 ? formatCountdown(rem) : 'Siap'}</span></div>`;
+        }).join('');
+
+        const tabs = [{ id: 'all', label: 'Semua' }, { id: 'builder', label: 'Bangunan' }, { id: 'hero', label: 'Hero' }, { id: 'lab', label: 'Lab' }, { id: 'pet', label: 'Pet' }];
+        document.getElementById('filter-tabs').innerHTML = tabs.map((t) => `<button data-tab="${t.id}" class="px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer ${state.activeTab === t.id ? 'bg-amber-500 text-slate-950' : 'bg-[#151e31] text-slate-400 border border-slate-800'}">${t.label}</button>`).join('');
+
+        const filtered = (state.activeTab === 'all' ? ups : ups.filter((u) => u.category === state.activeTab)).sort((a, b) => a.rem - b.rem);
+        document.getElementById('upgrades-grid').innerHTML = filtered.map((item) => {
+          const pct = Math.min(100, Math.max(0, ((item.totalSeconds - item.rem) / Math.max(1, item.totalSeconds)) * 100));
+          return `
+            <div class="bg-[#151e31] border border-slate-800 rounded-2xl p-4 space-y-3">
+              <div class="flex justify-between items-center"><span class="text-sm font-extrabold text-white truncate">${esc(item.name)} (Lv.${item.level})</span><button data-remove="${item.id}" class="text-xs text-slate-500 hover:text-rose-400 cursor-pointer">&#10005;</button></div>
+              <div class="bg-[#0e131f] border border-slate-800 rounded-xl p-3">
+                <div class="text-xl font-black font-mono-num ${item.rem <= 0 ? 'text-emerald-400' : 'text-amber-400'}">${formatCountdown(item.rem)}</div>
+                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden mt-2"><div class="h-full bg-amber-400" style="width:${pct}%"></div></div>
+                <div class="text-[11px] text-slate-400 mt-1.5">${formatCompletionTime(item.rem)}</div>
+              </div>
+              <div class="flex justify-between gap-2">
+                <button data-apprentice="${item.id}" class="flex-1 bg-indigo-500/20 text-indigo-300 text-xs font-bold py-1.5 rounded-lg cursor-pointer">Magang (-${acc.apprenticeLevel}j)</button>
+                <button data-finish="${item.id}" class="bg-emerald-500/20 text-emerald-300 text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer">Selesai</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        const hSec = document.getElementById('hero-roster-section');
+        if (!acc.heroRoster || !acc.heroRoster.length) hSec.classList.add('hidden');
+        else {
+          hSec.classList.remove('hidden');
+          document.getElementById('hero-roster-grid').innerHTML = acc.heroRoster.map((h) => `<div class="bg-[#0e131f] border border-slate-800 rounded-xl p-2.5 text-xs"><div class="font-bold text-white truncate">${esc(h.name)}</div><div class="text-purple-300 font-extrabold mt-1">Lv.${h.lvl}</div></div>`).join('');
+        }
+      }
+    }
+
+    function syncSelects() {
+      const opts = state.accounts.map((a) => `<option value="${a.id}">${esc(a.name)} (${esc(a.tag)})</option>`).join('');
+      document.getElementById('json-target-account').innerHTML = opts;
+      document.getElementById('add-target-account').innerHTML = opts;
+      const def = state.selectedView === 'overview' ? state.accounts[0].id : state.selectedView;
+      document.getElementById('json-target-account').value = def;
+      document.getElementById('add-target-account').value = def;
+    }
+
+    document.addEventListener('click', (e) => {
+      const v = e.target.closest('[data-select-view]');
+      if (v) { state.selectedView = v.dataset.selectView; persist(); render(); return; }
+      const b = e.target.closest('[data-set-builders]');
+      if (b) { getActiveAccount().totalBuilders = Number(b.dataset.setBuilders); persist(); render(); return; }
+      const p = e.target.closest('[data-set-pass]');
+      if (p) { getActiveAccount().goldPassDiscount = Number(p.dataset.setPass); persist(); render(); return; }
+      const t = e.target.closest('[data-tab]');
+      if (t) { state.activeTab = t.dataset.tab; persist(); render(); return; }
+      const r = e.target.closest('[data-remove]');
+      if (r) { const acc = getActiveAccount(); acc.upgrades = acc.upgrades.filter((u) => u.id !== r.dataset.remove); persist(); render(); return; }
+      const f = e.target.closest('[data-finish]');
+      if (f) { const acc = getActiveAccount(); const now = Date.now(); acc.upgrades = acc.upgrades.map((u) => (u.id === f.dataset.finish ? { ...u, endsAt: now } : u)); persist(); render(); return; }
+      const ap = e.target.closest('[data-apprentice]');
+      if (ap) { const acc = getActiveAccount(); const now = Date.now(); const ms = acc.apprenticeLevel * 3600000; acc.upgrades = acc.upgrades.map((u) => (u.id === ap.dataset.apprentice ? { ...u, endsAt: Math.max(now, u.endsAt - ms) } : u)); persist(); render(); }
+    });
+
+    document.getElementById('btn-open-sync').addEventListener('click', () => { document.getElementById('sync-room-input').value = roomId; document.getElementById('modal-sync').classList.remove('hidden'); });
+    document.getElementById('btn-close-sync').addEventListener('click', () => document.getElementById('modal-sync').classList.add('hidden'));
+    document.getElementById('btn-cancel-sync').addEventListener('click', () => document.getElementById('modal-sync').classList.add('hidden'));
+    document.getElementById('form-sync').addEventListener('submit', (e) => {
+      e.preventDefault();
+      attachRoomListener(document.getElementById('sync-room-input').value.trim());
+      persist();
+      document.getElementById('modal-sync').classList.add('hidden');
+      showToast(`Terhubung ke Kode Sinkronisasi: ${roomId}`);
+    });
+
+    document.getElementById('btn-open-json').addEventListener('click', () => { syncSelects(); document.getElementById('modal-json').classList.remove('hidden'); });
+    document.getElementById('btn-close-json').addEventListener('click', () => document.getElementById('modal-json').classList.add('hidden'));
+    document.getElementById('btn-cancel-json').addEventListener('click', () => document.getElementById('modal-json').classList.add('hidden'));
+    document.getElementById('form-json').addEventListener('submit', (e) => {
+      e.preventDefault();
+      try {
+        const acc = state.accounts.find((a) => a.id === document.getElementById('json-target-account').value);
+        const res = parseVillageExport(JSON.parse(document.getElementById('json-textarea').value.trim()), Date.now());
+        Object.assign(acc, res);
+        state.selectedView = acc.id;
+        persist();
+        render();
+        document.getElementById('modal-json').classList.add('hidden');
+        document.getElementById('json-textarea').value = '';
+        showToast(`${acc.name} disinkronkan!`);
+      } catch { showToast('Format JSON tidak valid.'); }
+    });
+
+    document.getElementById('btn-open-add').addEventListener('click', () => { syncSelects(); document.getElementById('modal-add').classList.remove('hidden'); });
+    document.getElementById('btn-close-add').addEventListener('click', () => document.getElementById('modal-add').classList.add('hidden'));
+    document.getElementById('btn-cancel-add').addEventListener('click', () => document.getElementById('modal-add').classList.add('hidden'));
+    document.getElementById('form-add').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const acc = state.accounts.find((a) => a.id === document.getElementById('add-target-account').value);
+      const sec = (Number(document.getElementById('input-days').value) * 86400) + (Number(document.getElementById('input-hours').value) * 3600) + (Number(document.getElementById('input-mins').value) * 60);
+      if (sec <= 0) return;
+      const now = Date.now();
+      acc.upgrades.push({
+        id: 'up-' + now, name: document.getElementById('input-name').value.trim(), level: Number(document.getElementById('input-level').value),
+        category: document.getElementById('input-category').value, resource: document.getElementById('input-resource').value,
+        cost: document.getElementById('input-cost').value.trim(), totalSeconds: sec, endsAt: now + sec * 1000, village: 'HV'
+      });
+      state.selectedView = acc.id;
+      persist(); render();
+      document.getElementById('modal-add').classList.add('hidden');
+    });
+
+    document.getElementById('btn-rename-acc').addEventListener('click', () => {
+      const acc = getActiveAccount();
+      document.getElementById('rename-name-input').value = acc.name;
+      document.getElementById('rename-tag-input').value = acc.tag;
+      document.getElementById('modal-rename').classList.remove('hidden');
+    });
+    document.getElementById('btn-cancel-rename').addEventListener('click', () => document.getElementById('modal-rename').classList.add('hidden'));
+    document.getElementById('form-rename').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const acc = getActiveAccount();
+      acc.name = document.getElementById('rename-name-input').value.trim() || acc.name;
+      acc.tag = document.getElementById('rename-tag-input').value.trim() || acc.tag;
+      persist(); render();
+      document.getElementById('modal-rename').classList.add('hidden');
+    });
+
+    document.getElementById('btn-clear-done').addEventListener('click', () => { const acc = getActiveAccount(); const now = Date.now(); acc.upgrades = acc.upgrades.filter((u) => u.endsAt > now); persist(); render(); });
+    document.getElementById('btn-reset-acc').addEventListener('click', () => {
+      const acc = getActiveAccount();
+      if (acc.id === 'acc-1') Object.assign(acc, parseVillageExport(USER_EXPORT_JSON, Date.now()));
+      else { acc.upgrades = []; acc.helpers = []; acc.heroRoster = []; }
+      persist(); render();
+    });
+    document.getElementById('btn-potion-builder').addEventListener('click', () => { const acc = getActiveAccount(); const now = Date.now(); acc.upgrades = acc.upgrades.map((u) => ((u.category === 'builder' || u.category === 'hero') && u.village !== 'BB' ? { ...u, endsAt: Math.max(now, u.endsAt - 9 * 3600000) } : u)); persist(); render(); });
+    document.getElementById('btn-potion-lab').addEventListener('click', () => { const acc = getActiveAccount(); const now = Date.now(); acc.upgrades = acc.upgrades.map((u) => (u.category === 'lab' ? { ...u, endsAt: Math.max(now, u.endsAt - 23 * 3600000) } : u)); persist(); render(); });
+    document.getElementById('btn-potion-pet').addEventListener('click', () => { const acc = getActiveAccount(); const now = Date.now(); acc.upgrades = acc.upgrades.map((u) => (u.category === 'pet' ? { ...u, endsAt: Math.max(now, u.endsAt - 23 * 3600000) } : u)); persist(); render(); });
+    document.getElementById('select-apprentice').addEventListener('change', (e) => { getActiveAccount().apprenticeLevel = Number(e.target.value); persist(); render(); });
+
+    initFirebase();
+    render();
+    setInterval(render, 1000);
+    window.addEventListener('focus', render);
+  </script>
+</body>
+</html>
