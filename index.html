@@ -298,15 +298,30 @@
     // =========================================================================
     // TEMPEL KONFIGURASI FIREBASE MILIKMU DI SINI:
     // =========================================================================
-    const FIREBASE_CONFIG = {
-      apiKey: "",
-      authDomain: "",
-      databaseURL: "",
-      projectId: "",
-      storageBucket: "",
-      messagingSenderId: "",
-      appId: ""
-    };
+    <script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyDIYsjU9ovYX3-9AdS-spRd4b3miqtfk1w",
+    authDomain: "coctracker-48917.firebaseapp.com",
+    databaseURL: "https://coctracker-48917-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "coctracker-48917",
+    storageBucket: "coctracker-48917.firebasestorage.app",
+    messagingSenderId: "639214435231",
+    appId: "1:639214435231:web:929e5228d42688a4b45baa",
+    measurementId: "G-20GKXRQFQ1"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
 
     const STORAGE_KEY = 'coc_multi_3acc_cloud_v1';
     const ROOM_KEY = 'coc_cloud_room_id_v1';
